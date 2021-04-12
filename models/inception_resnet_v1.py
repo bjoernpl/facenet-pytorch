@@ -258,7 +258,7 @@ class InceptionResnetV1(nn.Module):
         self.last_bn = nn.BatchNorm1d(512, eps=0.001, momentum=0.1, affine=True)
 
         if pretrained is not None:
-            self.logits = nn.Linear(512, tmp_classes)
+            self.logits = nn.Linear(512, tmp_classes if self.num_classes is None else self.num_classes)
             load_weights(self, pretrained)
 
         if self.classify and self.num_classes is not None:
@@ -298,7 +298,9 @@ class InceptionResnetV1(nn.Module):
         if self.classify:
             x = self.logits(x)
         else:
-            x = F.normalize(x, p=2, dim=1)
+            # Remove normalization layer
+            #x = F.normalize(x, p=2, dim=1)
+            pass
         return x
 
 
@@ -327,7 +329,9 @@ def load_weights(mdl, name):
         download_url_to_file(path, cached_file)
 
     state_dict = torch.load(cached_file)
-    mdl.load_state_dict(state_dict)
+    del state_dict["logits.weight"]
+    del state_dict["logits.bias"]
+    mdl.load_state_dict(state_dict, strict= False)
 
 
 def get_torch_home():
